@@ -1,0 +1,15 @@
+import { Router } from "express";
+import * as controller from "./rooms.controller";
+
+const roomsRoute = Router();
+
+roomsRoute.route("/:id")
+    .get(controller.getRoomInfo)
+    .post(controller.startGame);
+roomsRoute.route("/").post(controller.create);
+roomsRoute.route("/:id/players").post(controller.joinPlayers);
+roomsRoute.route("/:id/players/:name")
+    .get(controller.getPlayerInfo)
+    .patch(controller.updateCard);
+
+export default roomsRoute;
