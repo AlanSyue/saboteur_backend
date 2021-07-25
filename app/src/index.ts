@@ -2,7 +2,9 @@ import * as express from "express";
 import * as cors from "cors";
 import { connectDB } from "./database";
 import roomRoute from "./route/rooms/rooms.routing";
-import { connectSocket } from "./socket"
+import bbsRoute from "./route/bbs/bbs.routing";
+import { createServer } from "http";
+import { startSocketServer } from "./socket";
 
 const startServer = () => {
     const app: express.Application = express();
@@ -10,11 +12,17 @@ const startServer = () => {
     app.use(cors());
 
     app.use("/api/rooms", roomRoute);
+    app.use("/api/bbs", bbsRoute);
 
     const port = process.env.PORT || 8000;
-    const server = app.listen(port, () => console.log(`API Server is running at port ${port}.`));
-    connectSocket(server);
 
+    const httpServer = createServer(app);
+
+    startSocketServer(httpServer);
+
+    httpServer.listen(port, () => {
+        console.log(`Server listen on ${port}`);
+    });
 };
 
 (async () => {

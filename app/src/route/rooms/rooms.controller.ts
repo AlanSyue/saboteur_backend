@@ -3,6 +3,7 @@ import { RoomModel } from "../../models/rooms.models"
 
 export const create = async function (req: Request, res: Response) {
     const name = req.body.name;
+    const maxPlayersNumber = req.body.maxPlayersNumber;
     let players = {};
     players[name] = {
         team: '',
@@ -12,6 +13,7 @@ export const create = async function (req: Request, res: Response) {
 
     const room = await new RoomModel({
         owner: name,
+        max_players_number: maxPlayersNumber,
         play_can_move: '',
         players: players,
     }).save();
