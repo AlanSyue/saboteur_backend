@@ -15,7 +15,7 @@ export const getData = async function (req: Request, res: Response) {
     let searchObject = {};
     if (typeChecker(type)) {
         searchObject = {
-            type : type
+            type: type
         }
     }
 
@@ -25,7 +25,6 @@ export const getData = async function (req: Request, res: Response) {
         data: bbsData,
     });
 };
-
 
 export const create = async function (req: Request, res: Response) {
 
@@ -46,9 +45,20 @@ export const create = async function (req: Request, res: Response) {
         });
     }
 
+    req.body.created_date = getCurrentDate();
+
     await new BbsModel(req.body).save();
 
     return res.json({
         status: '200',
     });
 };
+
+const getCurrentDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String((today.getMonth() + 1)).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return `${year}/${month}/${day}`;
+}
