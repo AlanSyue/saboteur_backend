@@ -1,4 +1,4 @@
-FROM node:10
+FROM node:14
 
 WORKDIR /app
 
@@ -14,4 +14,4 @@ RUN npm install
 
 EXPOSE 8000
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start"]
