@@ -6,7 +6,11 @@ https://game.dev.newideas.com.tw/
 ## Description
 This is a online board game that can play with your friends!
 
-You can see the rule [here](https://www.ultraboardgames.com/saboteur/game-rules.php).
+This repository implements APIs and the websocket service.
+
+You can see the frontend repository [here](https://github.com/sallylin831006/Saboteur).
+
+You can see the game's rule [here](https://www.ultraboardgames.com/saboteur/game-rules.php).
 ![image](https://user-images.githubusercontent.com/33183531/137562850-add83a9e-b7d3-4f5a-ac8c-40a02cbbf28f.png)
 
 
