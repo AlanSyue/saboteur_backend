@@ -4,7 +4,7 @@
 https://game.dev.newideas.com.tw/
 
 ## Description
-This is a online board game that can play with your friends!
+This is an online board game that can play with your friends!
 
 This repository implements APIs and the websocket service.
 
