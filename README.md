@@ -1,7 +1,42 @@
-# DOCKER-GO-DEV
+# Saboteur
 
-## Setting up a local development environment for Go, Mongo (and Mongo Express Client)
+## Demo
+https://game.dev.newideas.com.tw/
 
-Find my Dev.to article here:
+## Description
+This is a online board game that can play with your friends!
 
-https://dev.to/itscosmas/how-to-set-up-a-local-development-workflow-with-docker-for-your-go-apps-with-mongodb-and-mongo-express-f99
+You can see the rule [here](https://www.ultraboardgames.com/saboteur/game-rules.php).
+![image](https://user-images.githubusercontent.com/33183531/137562850-add83a9e-b7d3-4f5a-ac8c-40a02cbbf28f.png)
+
+
+## Tools
+
+- **docker and docker-compose**: https://www.docker.com/products/docker-desktop
+
+## Getting Started
+
+1. Create and turn on the development environment
+```
+  docker-compose up -d
+```
+2. Test the API
+  [http://localhost:8000/](http://localhost:8000/)
+  
+## Some useful commands
+
+- Enter the node environemnt. (If you want to install any node module, please enter first.)
+```
+  docker-compose run app /bin/bash
+```
+
+- Show web service logs
+```
+  docker-compose logs -f app
+```
+
+- Turn off the environment
+```
+  docker-compose down
+```
+
