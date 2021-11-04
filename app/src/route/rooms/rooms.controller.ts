@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { RoomModel } from "../../models/rooms.models"
-import { generateCards } from "../../helpers/common"
+import { generateCards, TOOL_CARD_IDS, TEAM_GOOD_SABOTEUR, TEAM_BAD_SABOTEUR } from "../../helpers/common"
 
 /**
  * @param  {Request} req
@@ -16,6 +16,7 @@ export const create = async function (req: Request, res: Response): Promise<Resp
         team: '',
         cards: [],
         next_player: '',
+        is_ban: false,
     };
 
     const room = await new RoomModel({
@@ -35,10 +36,7 @@ export const create = async function (req: Request, res: Response): Promise<Resp
 
 export const startGame = async function (req: Request, res: Response) {
     const roomId = req.params.id;
-    const joinPlayers = req.params.players;
-
     const room = await RoomModel.findById(roomId);
-    let players = room.players;
 
     return res.json({
         status: '200', data: {
@@ -49,7 +47,6 @@ export const startGame = async function (req: Request, res: Response) {
 
 export const getRoomInfo = async function (req: Request, res: Response) {
     const roomId = req.params.id;
-
     const room = await RoomModel.findById(roomId);
 
     return res.json({ status: '200', data: room });
@@ -72,6 +69,7 @@ export const joinPlayers = async function (req: Request, res: Response) {
         cards: [],
         next_player: '',
         socket_id: '',
+        is_ban: false
     };
 
     room['players'] = players;
@@ -116,10 +114,16 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
         return res.json({ status: '400' });
     }
 
+    if (room.players[name]['is_ban'] && !TOOL_CARD_IDS.includes(cardId)) {
+        return res.json({ status: '400' });
+    }
+
     let board: Map<string, object> = new Map(Object.entries(room.board));
     let cards: number[] = room.cards;
     let players = room.players;
     let playerCards: number[] = players[name]['cards'];
+    const goldIndex: number = room.gold_index;
+    let openEndCards = room.open_end_cards;
 
     if (haveToUpdateBoard) {
         if (!board.has(positionX)) {
@@ -153,25 +157,76 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
     }
 
     const newCardId: number = cards.shift();
-    playerCards.splice(playerCards.indexOf(cardId), 1, newCardId);
-    players[name]['cards'] = playerCards;
+
+    if (typeof newCardId !== 'undefined') {
+        playerCards.splice(playerCards.indexOf(cardId), 1, newCardId);
+        players[name]['cards'] = playerCards;
+    } else {
+        playerCards.splice(playerCards.indexOf(cardId), 1);
+    }
+
+    const nextPlayer = await getNextPlayer(
+        players[name]['next_player'],
+        players
+    );
+
+    let isNoOneCanMove = false
+    let finishPosition = null;
+    let winTeam: number = 0;
+
+    if (nextPlayer === 'NO_ONE_CAN_MOVE') {
+        isNoOneCanMove = true;
+        winTeam = parseInt(TEAM_BAD_SABOTEUR);
+    }
+
+    let finalBoard = Object.fromEntries(board);
+
+    if (await checkIsFinish({ x: '1', y: '9' }, finalBoard)) {
+        finishPosition = 0;
+    }
+
+    if (await checkIsFinish({ x: '3', y: '9' }, finalBoard)) {
+        finishPosition = 1;
+    }
+
+    if (await checkIsFinish({ x: '5', y: '9' }, finalBoard)) {
+        finishPosition = 2;
+    }
+    if (finishPosition === goldIndex) {
+        isNoOneCanMove = true;
+        winTeam = parseInt(TEAM_GOOD_SABOTEUR);
+    }
+    if (finishPosition !== null && finishPosition !== goldIndex) {
+        let x = '1'
+
+        if (finishPosition === 1) {
+            x = '3';
+        }
+
+        if (finishPosition === 2) {
+            x = '5';
+        }
+
+        delete finalBoard[x]['9'];
+    }
+
+    if (finishPosition !== null) {
+        openEndCards.push(finishPosition);
+    }
 
     await RoomModel.findByIdAndUpdate(roomId, {
-        board: Object.fromEntries(board),
+        board: finalBoard,
         players: players,
         cards: cards,
-        play_can_move: players[name]['next_player'],
+        play_can_move: nextPlayer,
+        is_end: isNoOneCanMove,
+        win_team: winTeam,
+        open_end_cards: openEndCards,
     });
 
     room = await RoomModel.findById(roomId);
 
     return res.json({ status: '200', data: room });
-}
-
-interface toolsInterface {
-    ax: number,
-    lamp: number,
-    car: number,
 }
 
 /**
@@ -196,17 +251,180 @@ export const updateTools = async function (req: Request, res: Response): Promise
     let playerCards: number[] = players[name]['cards'];
 
     const newCardId: number = cards.shift();
-    playerCards.splice(playerCards.indexOf(cardId), 1, newCardId);
-    players[name]['cards'] = playerCards;
+
+    if (typeof newCardId !== 'undefined') {
+        playerCards.splice(playerCards.indexOf(cardId), 1, newCardId);
+        players[name]['cards'] = playerCards;
+    } else {
+        playerCards.splice(playerCards.indexOf(cardId), 1);
+    }
+
     players[targetName]['tools'] = tools;
+
+    if (Object.values(tools).reduce((a: number, b: number) => a + b) === 0) {
+        players[targetName]['is_ban'] = false;
+    } else {
+        players[targetName]['is_ban'] = true;
+    }
+
+    const nextPlayer = await getNextPlayer(
+        players[name]['next_player'],
+        players
+    );
+
+    let isNoOneCanMove = false
+    if (nextPlayer === 'NO_ONE_CAN_MOVE') {
+        isNoOneCanMove = true;
+    }
 
     await RoomModel.findByIdAndUpdate(roomId, {
         players: players,
         cards: cards,
         play_can_move: players[name]['next_player'],
+        is_end: isNoOneCanMove
     });
 
     room = await RoomModel.findById(roomId);
 
     return res.json({ status: '200', data: room });
+}
+
+/**
+ * @param  {Request} req
+ * @param  {Response} res
+ * @returns Promise
+ */
+export const deleteCard = async function (req: Request, res: Response): Promise<Response> {
+    const roomId: string = req.params.id;
+    const name: string = req.params.name;
+    const cardId: number = parseInt(req.body.cardId);
+
+    let room = await RoomModel.findById(roomId);
+
+    if (room.play_can_move !== name) {
+        return res.json({ status: '400' });
+    }
+
+    let cards: number[] = room.cards;
+    let players = room.players;
+    let playerCards: number[] = players[name]['cards'];
+
+    const newCardId: number = cards.shift();
+
+    if (typeof newCardId !== 'undefined') {
+        playerCards.splice(playerCards.indexOf(cardId), 1, newCardId);
+        players[name]['cards'] = playerCards;
+    } else {
+        playerCards.splice(playerCards.indexOf(cardId), 1);
+    }
+
+    const nextPlayer = await getNextPlayer(
+        players[name]['next_player'],
+        players
+    );
+
+    let isNoOneCanMove = false
+    if (nextPlayer === 'NO_ONE_CAN_MOVE') {
+        isNoOneCanMove = true;
+    }
+
+    await RoomModel.findByIdAndUpdate(roomId, {
+        players: players,
+        cards: cards,
+        play_can_move: nextPlayer,
+        is_end: isNoOneCanMove
+    });
+
+    room = await RoomModel.findById(roomId);
+
+    return res.json({ status: '200', data: room });
+
+}
+
+const getNextPlayer = async (currentPlayer: string, players: Object, counter: number = 1): Promise<string> => {
+    if (counter === Object.keys(players).length) {
+        return 'NO_ONE_CAN_MOVE';
+    }
+    const nextPlayer = players[currentPlayer]['next_player'];
+    const nextPlayerInfo = players[nextPlayer];
+    const nextPlayerCards = nextPlayerInfo.cards;
+
+    if (!nextPlayerCards.length) {
+        await getNextPlayer(
+            players[nextPlayer]['next_player'],
+            players,
+            counter++
+        );
+    }
+
+    return nextPlayer;
+}
+interface Position {
+    x: string,
+    y: string
+}
+
+const checkIsFinish = async (gold: Position, board: object) => {
+    let open: Array<Position> = [{ x: '3', y: '1' }];
+    let closed: Array<Position> = [];
+
+    while (open.length > 0) {
+        const card = open.pop();
+
+        if (cardEquals(card, gold)) {
+            return true;
+        }
+
+        closed.push(card);
+
+        const neighbours = getNeighbouringCards(card.x, card.y, board);
+
+        neighbours.forEach(function (neighbour) {
+            if (typeof board[neighbour.x] == 'undefined' || typeof board[neighbour.x][neighbour.y] == 'undefined') {
+                return;
+            }
+
+            const isClosed = !!closed.filter(function (card) {
+                return cardEquals(neighbour, card);
+            }).length;
+
+            if (isClosed) {
+                return;
+            }
+
+            neighbour.parent = card;
+            open.push(neighbour);
+        });
+    }
+
+    return false;
+}
+
+
+const cardEquals = (start: Position, goal: Position) => {
+    return start.x === goal.x && start.y === goal.y;
+}
+
+const getNeighbouringCards = (x: string, y: string, board: object) => {
+    let result = [];
+    const numberX = parseInt(x);
+    const numberY = parseInt(y);
+
+    if (typeof board[x] !== 'undefined' && typeof board[x][y] !== 'undefined') {
+        const card = board[x][y];
+        if (card.left == 'true' && numberX > 1) {
+            result.push({ x: (numberX - 1).toString(), y: y });
+        }
+        if (card.top == 'true' && numberY > 1) {
+            result.push({ x: x, y: (numberY - 1).toString() });
+        }
+        if (card.right == 'true' && numberX < 5) {
+            result.push({ x: (numberX + 1).toString(), y: y });
+        }
+        if (card.bottom == 'true' && numberY < 9) {
+            result.push({ x: x, y: (numberY + 1).toString() });
+        }
+    }
+
+    return result;
 }

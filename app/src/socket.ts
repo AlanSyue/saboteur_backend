@@ -81,6 +81,42 @@ export const startSocketServer = async (server) => {
                 players[nickname]['is_ready'] = true;
             }
 
+            let board = {
+                "1": {
+                    '9': {
+                        cardId: endBlockCards[0],
+                        top: 'true',
+                        bottom: 'true',
+                        left: 'true',
+                        right: 'true',
+                    },
+                },
+                "3": {
+                    '1': {
+                        top: 'true',
+                        bottom: 'true',
+                        left: 'true',
+                        right: 'true',
+                    },
+                    '9': {
+                        cardId: endBlockCards[1],
+                        top: 'true',
+                        bottom: 'true',
+                        left: 'true',
+                        right: 'true',
+                    }
+                },
+                "5": {
+                    '9': {
+                        cardId: endBlockCards[2],
+                        top: 'true',
+                        bottom: 'true',
+                        left: 'true',
+                        right: 'true',
+                    },
+                }
+            }
+
             await RoomModel.findByIdAndUpdate(room.id, {
                 is_start: true,
                 end_block_cards: endBlockCards,
@@ -88,6 +124,9 @@ export const startSocketServer = async (server) => {
                 players: players,
                 cards: cards,
                 play_can_move: turn[0],
+                is_end: false,
+                board: board,
+                gold_index: endBlockCards.indexOf(1),
             });
 
             socket.to(roomId).emit('initGame', JSON.stringify({
@@ -107,6 +146,10 @@ export const startSocketServer = async (server) => {
             const roomId: string = data.roomId;
             let room = await RoomModel.findById(roomId);
 
+            socket.emit('getRoomInfo', JSON.stringify({
+                room: room,
+            }));
+
             socket.to(roomId).emit('getRoomInfo', JSON.stringify({
                 room: room,
             }));
@@ -116,10 +159,12 @@ export const startSocketServer = async (server) => {
             const roomId: string = data.roomId;
             const deleteBlockId: string = data.deleteBlockId;
             let room = await RoomModel.findById(roomId);
-            console.log({
+
+            socket.emit('getDeleteBlock', JSON.stringify({
                 room: room,
                 deleteBlockId: deleteBlockId,
-            });
+            }));
+
             socket.to(roomId).emit('getDeleteBlock', JSON.stringify({
                 room: room,
                 deleteBlockId: deleteBlockId,
