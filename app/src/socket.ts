@@ -1,6 +1,14 @@
 import { RoomModel } from "./models/rooms.models"
 import { Server, Socket } from "socket.io";
-import { shuffleArray, GAME_SETTING, settingConfigInterface, generateTeams, TEAM_GOOD_SABOTEUR, TEAM_BAD_SABOTEUR } from "./helpers/common";
+import {
+    shuffleArray,
+    GAME_SETTING,
+    settingConfigInterface,
+    generateTeams,
+    TEAM_GOOD_SABOTEUR,
+    TEAM_BAD_SABOTEUR,
+    END_CARDS_DIRECTION_MAP
+} from "./helpers/common";
 
 export const startSocketServer = async (server) => {
     const io = new Server(server, {
@@ -17,8 +25,8 @@ export const startSocketServer = async (server) => {
 
             let room = await RoomModel.findById(roomId);
             let players = room.players;
-            
-            if (Object.keys(players).length > room.max_players_number || ! Object.keys(players).includes(nickname)) {
+
+            if (Object.keys(players).length > room.max_players_number || !Object.keys(players).includes(nickname)) {
                 socket.emit('initError', JSON.stringify({
                     'message': '此房間已額滿',
                     'redirect': true,
@@ -50,7 +58,7 @@ export const startSocketServer = async (server) => {
             let players = room.players;
             if (Object.keys(players).length < 3) {
                 socket.emit('initError', JSON.stringify({
-                    'message' : '玩家人數需大於 3 人才能開始',
+                    'message': '玩家人數需大於 3 人才能開始',
                     'redirect': false,
                 }));
                 return;
@@ -74,9 +82,9 @@ export const startSocketServer = async (server) => {
                 players[nickname]['team'] = teams.pop();
                 players[nickname]['cards'] = cards.splice(0, gameSetting.cardsNumber);
                 players[nickname]['tools'] = {
-                    'ax' : 0,
-                    'lamp' : 0,
-                    'car' : 0,
+                    'ax': 0,
+                    'lamp': 0,
+                    'car': 0,
                 }
                 players[nickname]['is_ready'] = true;
             }
@@ -85,10 +93,11 @@ export const startSocketServer = async (server) => {
                 "1": {
                     '9': {
                         cardId: endBlockCards[0],
-                        top: 'true',
-                        bottom: 'true',
-                        left: 'true',
-                        right: 'true',
+                        top: END_CARDS_DIRECTION_MAP[endBlockCards[0]]['top'],
+                        bottom: END_CARDS_DIRECTION_MAP[endBlockCards[0]]['bottom'],
+                        left: END_CARDS_DIRECTION_MAP[endBlockCards[0]]['left'],
+                        right: END_CARDS_DIRECTION_MAP[endBlockCards[0]]['right'],
+                        center: END_CARDS_DIRECTION_MAP[endBlockCards[0]]['center'],
                     },
                 },
                 "3": {
@@ -97,22 +106,25 @@ export const startSocketServer = async (server) => {
                         bottom: 'true',
                         left: 'true',
                         right: 'true',
+                        center: 'true',
                     },
                     '9': {
                         cardId: endBlockCards[1],
-                        top: 'true',
-                        bottom: 'true',
-                        left: 'true',
-                        right: 'true',
+                        top: END_CARDS_DIRECTION_MAP[endBlockCards[1]]['top'],
+                        bottom: END_CARDS_DIRECTION_MAP[endBlockCards[1]]['bottom'],
+                        left: END_CARDS_DIRECTION_MAP[endBlockCards[1]]['left'],
+                        right: END_CARDS_DIRECTION_MAP[endBlockCards[1]]['right'],
+                        center: END_CARDS_DIRECTION_MAP[endBlockCards[1]]['center'],
                     }
                 },
                 "5": {
                     '9': {
                         cardId: endBlockCards[2],
-                        top: 'true',
-                        bottom: 'true',
-                        left: 'true',
-                        right: 'true',
+                        top: END_CARDS_DIRECTION_MAP[endBlockCards[2]]['top'],
+                        bottom: END_CARDS_DIRECTION_MAP[endBlockCards[2]]['bottom'],
+                        left: END_CARDS_DIRECTION_MAP[endBlockCards[2]]['left'],
+                        right: END_CARDS_DIRECTION_MAP[endBlockCards[2]]['right'],
+                        center: END_CARDS_DIRECTION_MAP[endBlockCards[2]]['center'],
                     },
                 }
             }

@@ -17,6 +17,30 @@ export const TEAM_GOOD_SABOTEUR = '1';
  */
 export const TEAM_BAD_SABOTEUR = '2';
 
+export const END_CARDS_DIRECTION_MAP = {
+    1: {
+        top: 'true',
+        right: 'true',
+        left: 'true',
+        bottom: 'true',
+        center: 'true',
+    },
+    2: {
+        top: 'true',
+        right: 'false',
+        left: 'true',
+        bottom: 'false',
+        center: 'true',
+    },
+    3: {
+        top: 'true',
+        right: 'true',
+        left: 'false',
+        bottom: 'false',
+        center: 'true',
+    },
+}
+
 /**
  * The tool card IDs.
  * 

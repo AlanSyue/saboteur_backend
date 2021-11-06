@@ -104,6 +104,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
     const directionBottom: boolean = req.body.bottom;
     const directionLeft: boolean = req.body.left;
     const directionRight: boolean = req.body.right;
+    const directionCenter: boolean = req.body.center;
     const cardStyle: string = req.body.style;
     const haveToUpdateBoard: boolean = req.body.haveToUpdateBoard ?? true;
     const haveToDeleteCard: boolean = req.body.haveToDeleteCard ?? false;
@@ -123,7 +124,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
     let players = room.players;
     let playerCards: number[] = players[name]['cards'];
     const goldIndex: number = room.gold_index;
-    let openEndCards = room.open_end_cards;
+    let openEndCards: number[] = room.open_end_cards;
 
     if (haveToUpdateBoard) {
         if (!board.has(positionX)) {
@@ -134,6 +135,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
                     'bottom': directionBottom,
                     'left': directionLeft,
                     'right': directionRight,
+                    'center': directionCenter,
                     'style': cardStyle,
                 }
             });
@@ -148,6 +150,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
                     'bottom': directionBottom,
                     'left': directionLeft,
                     'right': directionRight,
+                    'center': directionCenter,
                     'style': cardStyle,
                 }
             }
@@ -165,13 +168,13 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
         playerCards.splice(playerCards.indexOf(cardId), 1);
     }
 
-    const nextPlayer = await getNextPlayer(
+    let nextPlayer = await getNextPlayer(
         players[name]['next_player'],
         players
     );
 
     let isNoOneCanMove = false
-    let finishPosition = null;
+    let finishPosition = [];
     let winTeam: number = 0;
 
     if (nextPlayer === 'NO_ONE_CAN_MOVE') {
@@ -182,36 +185,24 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
     let finalBoard = Object.fromEntries(board);
 
     if (await checkIsFinish({ x: '1', y: '9' }, finalBoard)) {
-        finishPosition = 0;
+        finishPosition.push(0);
     }
 
     if (await checkIsFinish({ x: '3', y: '9' }, finalBoard)) {
-        finishPosition = 1;
+        finishPosition.push(1);
     }
 
     if (await checkIsFinish({ x: '5', y: '9' }, finalBoard)) {
-        finishPosition = 2;
+        finishPosition.push(2);
     }
-    if (finishPosition === goldIndex) {
+    if (finishPosition.includes(goldIndex)) {
         isNoOneCanMove = true;
         winTeam = parseInt(TEAM_GOOD_SABOTEUR);
-    }
-    if (finishPosition !== null && finishPosition !== goldIndex) {
-        let x = '1'
-
-        if (finishPosition === 1) {
-            x = '3';
-        }
-
-        if (finishPosition === 2) {
-            x = '5';
-        }
-
-        delete finalBoard[x]['9'];
+        nextPlayer = 'NO_ONE_CAN_MOVE';
     }
 
-    if (finishPosition !== null) {
-        openEndCards.push(finishPosition);
+    if (! finishPosition.length) {
+        openEndCards = [...openEndCards, ...finishPosition];
     }
 
     await RoomModel.findByIdAndUpdate(roomId, {
@@ -221,7 +212,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
         play_can_move: nextPlayer,
         is_end: isNoOneCanMove,
         win_team: winTeam,
-        open_end_cards: openEndCards,
+        open_end_cards: [...new Set(finishPosition)],
     });
 
     room = await RoomModel.findById(roomId);
@@ -273,15 +264,18 @@ export const updateTools = async function (req: Request, res: Response): Promise
     );
 
     let isNoOneCanMove = false
+    let winTeam = 0;
     if (nextPlayer === 'NO_ONE_CAN_MOVE') {
         isNoOneCanMove = true;
+        winTeam = parseInt(TEAM_BAD_SABOTEUR);
     }
 
     await RoomModel.findByIdAndUpdate(roomId, {
         players: players,
         cards: cards,
-        play_can_move: players[name]['next_player'],
-        is_end: isNoOneCanMove
+        play_can_move: nextPlayer,
+        is_end: isNoOneCanMove,
+        win_team: winTeam
     });
 
     room = await RoomModel.findById(roomId);
@@ -324,15 +318,18 @@ export const deleteCard = async function (req: Request, res: Response): Promise<
     );
 
     let isNoOneCanMove = false
+    let winTeam = 0;
     if (nextPlayer === 'NO_ONE_CAN_MOVE') {
         isNoOneCanMove = true;
+        winTeam = parseInt(TEAM_BAD_SABOTEUR);
     }
 
     await RoomModel.findByIdAndUpdate(roomId, {
         players: players,
         cards: cards,
         play_can_move: nextPlayer,
-        is_end: isNoOneCanMove
+        is_end: isNoOneCanMove,
+        win_team: winTeam
     });
 
     room = await RoomModel.findById(roomId);
@@ -350,10 +347,10 @@ const getNextPlayer = async (currentPlayer: string, players: Object, counter: nu
     const nextPlayerCards = nextPlayerInfo.cards;
 
     if (!nextPlayerCards.length) {
-        await getNextPlayer(
+        return await getNextPlayer(
             players[nextPlayer]['next_player'],
             players,
-            counter++
+            counter = counter + 1
         );
     }
 
@@ -412,6 +409,9 @@ const getNeighbouringCards = (x: string, y: string, board: object) => {
 
     if (typeof board[x] !== 'undefined' && typeof board[x][y] !== 'undefined') {
         const card = board[x][y];
+        if (card.center == 'false') {
+            return [];
+        }
         if (card.left == 'true' && numberX > 1) {
             result.push({ x: (numberX - 1).toString(), y: y });
         }
