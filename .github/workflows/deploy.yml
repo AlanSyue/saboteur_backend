@@ -19,4 +19,5 @@ jobs:
             cd /var/www/html/saboteur_backend
             git checkout .
             git reset --hard
+            git pull
             sh deploy.sh
