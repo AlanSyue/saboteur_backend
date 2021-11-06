@@ -19,4 +19,4 @@ jobs:
             cd /var/www/html/saboteur_backend
             git checkout .
             git reset --hard
-            docker-compose restart
+            sh deploy.sh
