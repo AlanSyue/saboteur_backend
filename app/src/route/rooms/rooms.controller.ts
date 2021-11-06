@@ -169,7 +169,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
     }
 
     let nextPlayer = await getNextPlayer(
-        players[name]['next_player'],
+        name,
         players
     );
 
@@ -259,7 +259,7 @@ export const updateTools = async function (req: Request, res: Response): Promise
     }
 
     const nextPlayer = await getNextPlayer(
-        players[name]['next_player'],
+        name,
         players
     );
 
@@ -313,7 +313,7 @@ export const deleteCard = async function (req: Request, res: Response): Promise<
     }
 
     const nextPlayer = await getNextPlayer(
-        players[name]['next_player'],
+        name,
         players
     );
 
@@ -348,7 +348,7 @@ const getNextPlayer = async (currentPlayer: string, players: Object, counter: nu
 
     if (!nextPlayerCards.length) {
         return await getNextPlayer(
-            players[nextPlayer]['next_player'],
+            nextPlayer,
             players,
             counter = counter + 1
         );
