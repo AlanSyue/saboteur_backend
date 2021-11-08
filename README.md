@@ -31,7 +31,7 @@ You can see the game's rule [here](https://www.ultraboardgames.com/saboteur/game
 
 - Enter the node environemnt. (If you want to install any node module, please enter first.)
 ```
-  docker-compose run app /bin/bash
+  docker-compose run node /bin/bash
 ```
 
 - Show web service logs
