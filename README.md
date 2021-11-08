@@ -46,5 +46,5 @@ You can see the game's rule [here](https://www.ultraboardgames.com/saboteur/game
 
 - Run the tests
 ```
- docker-compose run node npm run test
+  docker-compose run node npm run test
 ```
