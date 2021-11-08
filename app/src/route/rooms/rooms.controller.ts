@@ -201,7 +201,7 @@ export const putCard = async function (req: Request, res: Response): Promise<Res
         nextPlayer = 'NO_ONE_CAN_MOVE';
     }
 
-    if (! finishPosition.length) {
+    if (!finishPosition.length) {
         openEndCards = [...openEndCards, ...finishPosition];
     }
 
@@ -338,7 +338,7 @@ export const deleteCard = async function (req: Request, res: Response): Promise<
 
 }
 
-const getNextPlayer = async (currentPlayer: string, players: Object, counter: number = 1): Promise<string> => {
+export const getNextPlayer = async (currentPlayer: string, players: Object, counter: number = 1): Promise<string> => {
     if (counter === Object.keys(players).length) {
         return 'NO_ONE_CAN_MOVE';
     }
