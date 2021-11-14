@@ -60,6 +60,12 @@ export const joinPlayers = async function (req: Request, res: Response) {
     let players = room.players;
     const maxPlayersNumber = room.max_players_number;
 
+    const hasPlayer = Object.keys(players).includes(name);
+
+    if (hasPlayer) {
+        return res.json({ status: '200', data: room });
+    }
+
     if (Object.keys(players).length >= maxPlayersNumber) {
         return res.json({ status: '400' });
     }
@@ -76,7 +82,7 @@ export const joinPlayers = async function (req: Request, res: Response) {
 
     await RoomModel.findByIdAndUpdate(roomId, room);
 
-    return res.json({ status: '200' });
+    return res.json({ status: '200', data: room });
 };
 
 export const getPlayerInfo = async function (req: Request, res: Response) {
@@ -339,14 +345,15 @@ export const deleteCard = async function (req: Request, res: Response): Promise<
 }
 
 export const getNextPlayer = async (currentPlayer: string, players: Object, counter: number = 1): Promise<string> => {
-    if (counter === Object.keys(players).length) {
+    if (counter > Object.keys(players).length) {
         return 'NO_ONE_CAN_MOVE';
     }
     const nextPlayer = players[currentPlayer]['next_player'];
+    const isCurrentPlayerReady = players[currentPlayer]['is_ready'];
     const nextPlayerInfo = players[nextPlayer];
     const nextPlayerCards = nextPlayerInfo.cards;
 
-    if (!nextPlayerCards.length) {
+    if (!nextPlayerCards.length || !nextPlayerInfo['is_ready']) {
         return await getNextPlayer(
             nextPlayer,
             players,
