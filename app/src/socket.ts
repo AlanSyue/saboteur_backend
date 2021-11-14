@@ -36,6 +36,7 @@ export const startSocketServer = async (server) => {
             socket.join(roomId);
 
             players[nickname]['socket_id'] = socket.id;
+            players[nickname]['is_ready'] = true;
             room.players = players;
             await RoomModel.findByIdAndUpdate(room.id, room);
             socket.to(roomId).emit('roomInfo', JSON.stringify(room));
@@ -247,7 +248,6 @@ export const startSocketServer = async (server) => {
 
         socket.on('disconnecting', async () => {
             const roomInfo = socket.rooms.values();
-            console.log('disconnect', roomInfo);
             const socketId = roomInfo.next().value;
             const roomId = roomInfo.next().value;
             if (roomId === 'undefined') {
@@ -255,22 +255,37 @@ export const startSocketServer = async (server) => {
             }
             let room = await RoomModel.findById(roomId);
             let players = room.players;
+            let whoCanMove = room.play_can_move;
 
             for (const [nickname, info] of Object.entries(players)) {
-                if (
-                    info.socket_id === socketId
-                    && typeof info.is_ready !== 'undefined'
-                    && !info.is_ready
-                ) {
+                if (info.socket_id !== socketId) {
+                    continue;
+                }
+
+                if (!room.is_start) {
                     delete players[nickname];
+                    continue;
+                }
+
+                if (typeof info.is_ready !== 'undefined' && info.is_ready) {
+                    players[nickname]['is_ready'] = false;
+                    
+                    if (whoCanMove === nickname) {
+                        whoCanMove = players[nickname]['next_player'];
+                    }
+                    continue;
                 }
             }
 
             room.players = players;
+            room.play_can_move = whoCanMove;
 
-            await RoomModel.findByIdAndUpdate(room.id, { players: players });
+            await RoomModel.findByIdAndUpdate(room.id, { players: players, play_can_move: whoCanMove});
 
             socket.to(roomId).emit('roomInfo', JSON.stringify(room));
+            socket.to(roomId).emit('getRoomInfo', JSON.stringify({
+                room: room,
+            }));
         });
     });
 };
