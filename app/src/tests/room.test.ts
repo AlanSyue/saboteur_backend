@@ -6,18 +6,22 @@ describe('test get next player', () => {
       alan: {
         next_player: 'sally',
         cards: [1],
+        is_ready: true,
       },
       sally: {
         next_player: 'ken',
         cards: [1],
+        is_ready: true,
       },
       ken: {
         next_player: 'giny',
         cards: [1],
+        is_ready: true,
       },
       giny: {
         next_player: 'alan',
         cards: [1],
+        is_ready: true,
       },
     }
     const nextPlayer = await getNextPlayer('alan', players);
@@ -29,14 +33,17 @@ describe('test get next player', () => {
       alan: {
         next_player: 'sally',
         cards: [],
+        is_ready: true,
       },
       sally: {
         next_player: 'giny',
         cards: [],
+        is_ready: true,
       },
       giny: {
         next_player: 'alan',
         cards: [],
+        is_ready: true,
       },
     }
     const nextPlayer = await getNextPlayer('alan', players);

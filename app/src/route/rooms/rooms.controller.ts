@@ -349,7 +349,6 @@ export const getNextPlayer = async (currentPlayer: string, players: Object, coun
         return 'NO_ONE_CAN_MOVE';
     }
     const nextPlayer = players[currentPlayer]['next_player'];
-    const isCurrentPlayerReady = players[currentPlayer]['is_ready'];
     const nextPlayerInfo = players[nextPlayer];
     const nextPlayerCards = nextPlayerInfo.cards;
 
