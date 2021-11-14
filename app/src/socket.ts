@@ -26,7 +26,7 @@ export const startSocketServer = async (server) => {
             let room = await RoomModel.findById(roomId);
             let players = room.players;
 
-            if (Object.keys(players).length > room.max_players_number || !Object.keys(players).includes(nickname)) {
+            if (!Object.keys(players).includes(nickname)) {
                 socket.emit('initError', JSON.stringify({
                     'message': '此房間已額滿',
                     'redirect': true,
@@ -168,6 +168,25 @@ export const startSocketServer = async (server) => {
             }));
         });
 
+        socket.on('changePlayer', async (data) => {
+            const roomId = data.roomId;
+            const nickname = data.nickname;
+
+            let room = await RoomModel.findById(roomId);
+            const nextPlayer = room.players[nickname]['next_player']
+            room.play_can_move = nextPlayer;
+
+            await RoomModel.findByIdAndUpdate(room.id, { play_can_move: nextPlayer });
+
+            socket.emit('getRoomInfo', JSON.stringify({
+                room: room,
+            }));
+
+            socket.to(roomId).emit('getRoomInfo', JSON.stringify({
+                room: room,
+            }));
+        });
+
         socket.on('getDeleteBlock', async (data) => {
             const roomId: string = data.roomId;
             const deleteBlockId: string = data.deleteBlockId;
@@ -269,10 +288,6 @@ export const startSocketServer = async (server) => {
 
                 if (typeof info.is_ready !== 'undefined' && info.is_ready) {
                     players[nickname]['is_ready'] = false;
-                    
-                    if (whoCanMove === nickname) {
-                        whoCanMove = players[nickname]['next_player'];
-                    }
                     continue;
                 }
             }
@@ -280,7 +295,7 @@ export const startSocketServer = async (server) => {
             room.players = players;
             room.play_can_move = whoCanMove;
 
-            await RoomModel.findByIdAndUpdate(room.id, { players: players, play_can_move: whoCanMove});
+            await RoomModel.findByIdAndUpdate(room.id, { players: players, play_can_move: whoCanMove });
 
             socket.to(roomId).emit('roomInfo', JSON.stringify(room));
             socket.to(roomId).emit('getRoomInfo', JSON.stringify({
