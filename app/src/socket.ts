@@ -298,9 +298,6 @@ export const startSocketServer = async (server) => {
             await RoomModel.findByIdAndUpdate(room.id, { players: players, play_can_move: whoCanMove });
 
             socket.to(roomId).emit('roomInfo', JSON.stringify(room));
-            socket.to(roomId).emit('getRoomInfo', JSON.stringify({
-                room: room,
-            }));
         });
     });
 };
