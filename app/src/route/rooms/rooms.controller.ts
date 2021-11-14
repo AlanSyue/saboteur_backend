@@ -243,11 +243,6 @@ export const updateTools = async function (req: Request, res: Response): Promise
     if (room.play_can_move !== name) {
         return res.json({ status: '400' });
     }
-
-    if (Object.values(tools).reduce((a: number, b: number) => a + b) > 1) {
-        return res.json({ status: '400' });
-    }
-
     let cards: number[] = room.cards;
     let players = room.players;
     let playerCards: number[] = players[name]['cards'];
