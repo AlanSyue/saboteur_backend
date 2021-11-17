@@ -55,9 +55,9 @@ export const startSocketServer = async (server) => {
             const roomId = data.roomId;
 
             let room = await RoomModel.findById(roomId);
-            const maxPlayersNumber = room.max_players_number;
             let players = room.players;
-            if (Object.keys(players).length < 3) {
+            const maxPlayersNumber = Object.keys(players).length;
+            if (maxPlayersNumber < 3) {
                 socket.emit('initError', JSON.stringify({
                     'message': '玩家人數需大於 3 人才能開始',
                     'redirect': false,
@@ -132,6 +132,7 @@ export const startSocketServer = async (server) => {
 
             await RoomModel.findByIdAndUpdate(room.id, {
                 is_start: true,
+                max_players_number: maxPlayersNumber,
                 end_block_cards: endBlockCards,
                 turn: turn,
                 players: players,
