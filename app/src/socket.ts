@@ -168,6 +168,15 @@ export const startSocketServer = async (server) => {
             }));
         });
 
+        socket.on('inviteNewGame', async (data) => {
+            const roomId = data.roomId;
+            const newRoomId: string = data.newRoomId;
+
+            socket.to(roomId).emit('inviteNewGame', JSON.stringify({
+                roomId: newRoomId,
+            }));
+        });
+
         socket.on('changePlayer', async (data) => {
             const roomId = data.roomId;
             const nickname = data.nickname;
